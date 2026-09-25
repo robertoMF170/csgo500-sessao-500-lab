@@ -1,0 +1,59 @@
+{
+ "url": "http://127.0.0.1:8123/demo-hud.html",
+ "elementos": {
+  "#wallet": [
+   41,
+   131,
+   560,
+   34
+  ],
+  "#wallet.texto": [
+   41,
+   132,
+   134,
+   31
+  ],
+  "#grid": [
+   41,
+   493,
+   268,
+   268
+  ],
+  "#grid.texto": [
+   41,
+   493,
+   268,
+   268
+  ],
+  "#mines-mult": [
+   410,
+   1027,
+   60,
+   23
+  ],
+  "#mines-mult.texto": [
+   410,
+   1027,
+   60,
+   23
+  ],
+  "#mines-desenhado": [
+   86,
+   1232,
+   91,
+   34
+  ],
+  "#mines-desenhado.texto": [
+   97,
+   1241,
+   69,
+   16
+  ]
+ },
+ "saida": "capturas/demo.png",
+ "guardado": true,
+ "tamanho": [
+  900,
+  1421
+ ]
+}

@@ -1,0 +1,10 @@
+﻿__pycache__/
+.venv/
+venv/
+node_modules/
+.env
+*.log
+events.db
+debug.txt
+shots/
+baus_cache.json

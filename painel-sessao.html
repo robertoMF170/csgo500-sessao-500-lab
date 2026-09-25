@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sessão 500 — Painel de Disciplina</title>
+<style>
+  :root{
+    --bg:#12101a; --panel:#1b1826; --panel2:#232032; --line:#2e2a3f;
+    --txt:#e8e6f0; --mut:#8b8798; --acc:#ff5773; --ok:#3ddc97;
+    --warn:#f5c451; --bad:#ff6b6b; --blue:#5aa9ff;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#241d33 0%,var(--bg) 60%);
+    color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;padding:20px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  h1{font-size:19px;margin:0;letter-spacing:.3px}
+  h1 span{color:var(--acc)}
+  .pill{margin-left:auto;font:600 12px/1 var(--mono);padding:8px 12px;border-radius:999px;
+        border:1px solid var(--line);background:var(--panel);letter-spacing:.5px}
+  .pill.live{border-color:var(--ok);color:var(--ok)}
+  .pill.over{border-color:var(--bad);color:var(--bad)}
+  .grid{display:grid;gap:14px}
+  .cols{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .card h2{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);
+           margin:0 0 10px;font-weight:600}
+  .big{font:700 30px/1.1 var(--mono);margin:0}
+  .sub{color:var(--mut);font-size:12.5px;margin-top:6px}
+  .bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:10px}
+  .bar>i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+  .bar.w>i{background:var(--warn)} .bar.b>i{background:var(--bad)}
+  .row{display:flex;gap:14px;align-items:center}
+  button{
+    font:600 13px/1 inherit;color:var(--txt);background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:11px 14px;cursor:pointer;
+  }
+  button:hover{border-color:#4a4463}
+  button:active{transform:translateY(1px)}
+  button.win{background:#1e4a38;border-color:#2f7a5c;color:#bff5dd}
+  button.lose{background:#4a2028;border-color:#7a3545;color:#ffd3da}
+  button.ghost{background:transparent}
+  button.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+  input,textarea,select{
+    font:inherit;color:var(--txt);background:var(--panel2);border:1px solid var(--line);
+    border-radius:9px;padding:9px 10px;width:100%;
+  }
+  textarea{font:13px/1.55 var(--mono);resize:vertical}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 5px}
+  .f{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+  .next{font:700 40px/1 var(--mono);margin:4px 0 2px;color:#fff}
+  .game{font:600 13px/1.4 var(--mono);color:var(--acc);letter-spacing:.5px}
+  canvas{width:100%;height:230px;display:block}
+  table{width:100%;border-collapse:collapse;font:12.5px/1.6 var(--mono)}
+  th{text-align:left;color:var(--mut);font-weight:600;font-size:10.5px;text-transform:uppercase;
+     letter-spacing:1px;padding:0 8px 6px 0;border-bottom:1px solid var(--line)}
+  td{padding:5px 8px 5px 0;border-bottom:1px solid #262238}
+  .win-t{color:var(--ok)} .lose-t{color:var(--bad)} .push-t{color:var(--mut)}
+  .scroll{max-height:250px;overflow:auto}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;
+      border-bottom:1px solid #262238}
+  .kv b{font-family:var(--mono);font-weight:600}
+  .note{color:var(--mut);font-size:12.5px;line-height:1.65}
+  .flag{border-left:3px solid var(--warn);padding-left:11px;margin:12px 0}
+  .flag.bad{border-color:var(--bad)} .flag.ok{border-color:var(--ok)}
+  .hidden{display:none}
+  details>summary{cursor:pointer;color:var(--mut);font-size:12.5px;letter-spacing:.4px}
+  details>summary:hover{color:var(--txt)}
+  code{font:12.5px var(--mono);background:var(--panel2);padding:2px 6px;border-radius:6px}
+  .tag{display:inline-block;font:600 10px/1 var(--mono);padding:4px 7px;border-radius:6px;
+       background:var(--panel2);color:var(--mut);letter-spacing:.6px}
+  kbd{font:600 11px/1 var(--mono);background:var(--panel2);border:1px solid var(--line);
+      border-bottom-width:2px;border-radius:6px;padding:3px 6px;color:var(--txt)}
+  .pace{height:6px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:8px}
+  .pace>i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+  .pace.w>i{background:var(--warn)} .pace.b>i{background:var(--bad)}
+  #lock{position:fixed;inset:0;background:rgba(9,8,14,.955);backdrop-filter:blur(7px);
+        z-index:60;display:none;align-items:center;justify-content:center;padding:24px}
+  #lock.on{display:flex}
+  #lockBox{max-width:560px;width:100%;background:var(--panel);border:1px solid var(--line);
+           border-radius:18px;padding:28px}
+  #lockBox h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:1.4px;
+              color:var(--warn)}
+  #lockTimer{font:700 54px/1 var(--mono);margin:8px 0 4px;color:#fff}
+  .steps{margin:16px 0 0;padding:0;list-style:none;text-align:left}
+  .steps li{padding:7px 0 7px 26px;position:relative;color:var(--txt);font-size:14px;
+            border-bottom:1px solid #262238}
+  .steps li:before{content:"→";position:absolute;left:4px;color:var(--acc);font-weight:700}
+  .lockStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px;text-align:left}
+  .lockStats div{background:var(--panel2);border-radius:9px;padding:9px 11px}
+  .lockStats span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.9px;color:var(--mut)}
+  .lockStats b{font:600 15px/1.4 var(--mono)}
+  .shield{width:100%;padding:16px;font-size:15px;border-radius:12px;
+          background:linear-gradient(135deg,#1e4a38,#2a6b52);border:1px solid #3a8f6d;
+          color:#d6fbec;letter-spacing:.3px}
+  .shield:hover{border-color:#5ad3a3}
+  .impulse{width:100%;padding:12px;margin-top:8px;border-radius:12px;
+           background:transparent;border:1px dashed #6a5a3a;color:var(--warn);font-size:13px}
+  #gate,#war{position:fixed;inset:0;z-index:70;display:none;align-items:center;
+             justify-content:center;padding:24px;background:rgba(9,8,14,.965);backdrop-filter:blur(7px)}
+  #gate.on,#war.on{display:flex}
+  #gateBox,#warBox{max-width:600px;width:100%;background:var(--panel);border:1px solid var(--line);
+                   border-radius:18px;padding:26px}
+  #gateBox h3,#warBox h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;
+                          letter-spacing:1.4px;color:var(--blue)}
+  #warBox h3{color:var(--bad)}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--txt);
+         padding:9px 0;border-bottom:1px solid #262238;cursor:pointer}
+  .check input{width:auto;margin-top:2px;flex:none}
+  .delta{font:700 22px/1.3 var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Sessão <span>500</span> — Painel de Disciplina</h1>
+    <div class="pill" id="statusPill">aguarda início</div>
+  </header>
+
+  <div class="grid cols" style="margin-bottom:14px">
+    <div class="card">
+      <h2>Saldo actual</h2>
+      <p class="big" id="bal">—</p>
+      <div class="sub">iniciado em <b id="startBal">—</b></div>
+    </div>
+    <div class="card">
+      <h2>Lucro / Prejuízo</h2>
+      <p class="big" id="pnl">—</p>
+      <div class="sub" id="pnlPct">—</div>
+    </div>
+    <div class="card">
+      <h2>Meta</h2>
+      <p class="big" id="goalTxt">livre</p>
+      <div class="sub" id="goalSub">sem objectivo definido — só diversão</div>
+    </div>
+    <div class="card">
+      <h2>Orçamento de volume</h2>
+      <p class="big" id="volTxt">—</p>
+      <div class="bar" id="volBar"><i></i></div>
+      <div class="sub" id="volSub">—</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>Saldo real vs. deriva esperada do edge</h2>
+    <canvas id="chart"></canvas>
+    <div class="note" style="margin-top:8px">
+      A linha tracejada é <code>E[saldo] = banca − 0.01 × volume apostado</code>. Se o teu saldo
+      anda colado a ela, não é azar: é o preço do bilhete a ser cobrado. A linha rosa é o teu caminho real.
+    </div>
+  </div>
+
+  <div class="grid cols" style="margin-bottom:14px">
+    <div class="card">
+      <h2>Próxima ronda</h2>
+      <div class="game" id="nextGame">—</div>
+      <p class="next" id="nextStake">—</p>
+      <div class="sub" id="nextDetail">—</div>
+      <div class="row" style="margin-top:14px;flex-wrap:wrap">
+        <button class="win"  id="btnWin">Ganhei</button>
+        <button class="lose" id="btnLose">Perdi</button>
+        <button class="ghost" id="btnPush">Push / anular</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" id="btnSkip">Saltar esta ronda</button>
+        <button class="ghost" id="btnUndo">Desfazer última</button>
+      </div>
+      <div class="sub" style="margin-top:12px">
+        Atalhos: <kbd>1</kbd> ganhei · <kbd>2</kbd> perdi · <kbd>3</kbd> push ·
+        <kbd>espaço</kbd> pausa · <kbd>z</kbd> desfazer
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Guardrails</h2>
+      <div class="kv"><span>Tempo de sessão</span><b id="gTime">—</b></div>
+      <div class="bar" id="timeBar"><i></i></div>
+      <div class="kv" style="margin-top:10px"><span>Rondas jogadas</span><b id="gRounds">—</b></div>
+      <div class="kv"><span>Volume consumido</span><b id="gVol">—</b></div>
+      <div class="kv"><span>Rondas ainda estimadas</span><b id="gLeft">—</b></div>
+      <div class="kv"><span>Tempo ainda estimado</span><b id="gTLeft">—</b></div>
+      <div class="kv"><span>Stake travado</span><b id="gLock">—</b></div>
+      <div id="alerts"></div>
+    </div>
+
+    <div class="card" id="brakeCard">
+      <h2>Freno de mão — TiltGuard</h2>
+      <p class="big" id="brakeState">pronto</p>
+      <div class="sub" id="brakeReason">as pausas custam zero edge. são a única coisa grátis aqui.</div>
+      <div class="kv" style="margin-top:12px"><span>Ritmo actual</span><b id="brPace">—</b></div>
+      <div class="pace" id="paceBar"><i></i></div>
+      <div class="kv" style="margin-top:10px"><span>Sequência de derrotas</span><b id="brStreak">—</b></div>
+      <div class="kv"><span>Rondas desde a última pausa</span><b id="brSince">—</b></div>
+      <div class="kv"><span>Pausas cumpridas</span><b id="brCount">—</b></div>
+      <div class="kv"><span>Tempo total em pausa</span><b id="brTime">—</b></div>
+      <button class="ghost" id="btnPauseNow" style="margin-top:12px">Pausa voluntária (2 min)</button>
+    </div>
+
+    <div class="card">
+      <h2>Botão de disciplina</h2>
+      <p class="sub" style="margin:0 0 12px">Os dois botões abaixo são <b>sempre seguros</b> de carregar.
+        Nenhum deles aposta. Um deles põe-te a jogar; o outro põe-te a parar.</p>
+      <button class="shield" id="btnShield">🛡 Vou apostar com disciplina</button>
+      <button class="impulse" id="btnImpulse">⚡ Estou com impulso de fugir ao plano</button>
+      <button class="ghost" id="btnGate" style="width:100%;margin-top:8px;font-size:12.5px">
+        Quero alterar o plano (gate de 60 s)</button>
+      <div class="kv" style="margin-top:14px"><span>Impulsos registados</span><b id="diImpulses">—</b></div>
+      <div class="kv"><span>Desvios ao plano aplicados</span><b id="diDeviations">—</b></div>
+      <div class="sub" id="diNote">Carregar em «impulso» nunca te custa nada. Escondê-lo custa.</div>
+    </div>
+
+    <div class="card">
+      <h2>Monte Carlo do estado actual</h2>
+      <div class="kv"><span>P(chegar à meta)</span><b id="mcGoal">—</b></div>
+      <div class="kv"><span>P(cruzar saldo positivo)</span><b id="mcGreen">—</b></div>
+      <div class="kv"><span>P(duplicar em algum momento)</span><b id="mcDouble">—</b></div>
+      <div class="kv"><span>P(subir 20% em algum momento)</span><b id="mcPeak">—</b></div>
+      <div class="kv"><span>Mediana de rondas restantes</span><b id="mcMed">—</b></div>
+      <div class="sub" id="mcNote">10.000 simulações da tua sessão a partir do estado actual.</div>
+      <button class="ghost" id="btnMC" style="margin-top:10px">Recalcular</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>Registo da sessão</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>#</th><th>Jogo</th><th>Stake</th><th>Mult.</th><th>Resultado</th><th>Saldo</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap">
+      <button class="ghost" id="btnExportJson">Exportar JSON</button>
+      <button class="ghost" id="btnExportCsv">Exportar CSV</button>
+      <button class="ghost" id="btnReset">Nova sessão</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>Configuração</h2>
+    <div class="f">
+      <div><label>Banca inicial ($)</label><input id="cfgStart" type="number" step="0.01" value="5"></div>
+      <div><label>Stake fixo ($)</label><input id="cfgStake" type="number" step="0.01" value="0.30"></div>
+      <div><label>Meta ($) — opcional</label><input id="cfgGoal" type="number" step="0.01" value="0"></div>
+      <div><label>Edge do jogo (%)</label><input id="cfgEdge" type="number" step="0.1" value="1"></div>
+      <div><label>Segundos por ronda</label><input id="cfgSpeed" type="number" step="0.5" value="3"></div>
+      <div><label>Limite de tempo (min)</label><input id="cfgTime" type="number" step="5" value="45"></div>
+      <div><label>Pausa a cada N rondas</label><input id="cfgMicroEvery" type="number" step="5" value="25"></div>
+      <div><label>Duração da micro-pausa (s)</label><input id="cfgMicroSecs" type="number" step="5" value="45"></div>
+      <div><label>Derrotas seguidas → cooldown</label><input id="cfgLossStreak" type="number" step="1" value="5"></div>
+      <div><label>Cooldown da sequência (s)</label><input id="cfgLossCool" type="number" step="30" value="180"></div>
+      <div><label>Ganho grande ($) → cooldown</label><input id="cfgWinCool" type="number" step="0.5" value="1"></div>
+      <div><label>Ritmo máximo (rondas/min)</label><input id="cfgMaxPace" type="number" step="5" value="20"></div>
+    </div>
+    <div style="margin-top:14px">
+      <label>Rotação de rondas — uma por linha: <code>dice &lt;multiplicador&gt;</code> ou <code>mines &lt;minas&gt; &lt;casas&gt;</code></label>
+      <textarea id="cfgRotation" rows="8"></textarea>
+      <div class="sub" id="rotInfo"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="acc" id="btnApply">Aplicar configuração</button>
+      <button class="ghost" id="btnResetCfg">Repor padrão</button>
+    </div>
+    <div class="flag" id="rotWarn"></div>
+  </div>
+
+  <div id="gate">
+    <div id="gateBox">
+      <h3>gate de alteração de plano</h3>
+      <p class="note" style="margin:0">Vais pedir uma alteração ao plano. O painel não te proíbe —
+        mostra-te o preço medido e obriga-te a esperar 60 segundos. Se depois disso ainda quiseres,
+        aplica-se e fica registado como desvio deliberado.</p>
+      <div class="f" style="margin-top:16px">
+        <div><label>Stake pretendido ($)</label>
+          <input id="gateStake" type="number" step="0.05" value="0.30"></div>
+        <div><label>Stake do plano ($)</label>
+          <input id="gatePlanStake" type="number" value="0.30" disabled></div>
+      </div>
+      <div class="lockStats" id="gateCost" style="margin-top:14px"></div>
+      <div id="gateChecks" style="margin-top:18px"></div>
+      <div class="row" style="margin-top:18px">
+        <button class="ghost" id="gateCancel">Voltar ao plano</button>
+        <button class="acc" id="gateApply" disabled>Aplicar (0:60)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="war">
+    <div id="warBox">
+      <h3>sessão encerrada pelo freno de mão</h3>
+      <p class="note" style="margin:0" id="warWhy"></p>
+      <div class="lockStats" id="warStats" style="margin-top:16px"></div>
+      <p class="note" style="margin-top:16px">Este painel <b>não te consegue impedir</b> de abrir o site.
+        Só te consegue obrigar a ler isto antes de o fazeres. Nesse sentido, é um aviso, não uma
+        barreira — o travão que trava de verdade é o limite de depósito na tua conta, e é lá que
+        deves ir agora.</p>
+      <div class="row" style="margin-top:18px">
+        <button class="acc" id="warAck">Confirmo o fim da sessão</button>
+        <button class="ghost" id="warNew">Nova sessão (registada)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lock">
+    <div id="lockBox">
+      <h3 id="lockTitle">pausa obrigatória</h3>
+      <p style="margin:0;color:var(--mut);font-size:13.5px" id="lockWhy"></p>
+      <div id="lockTimer">0:00</div>
+      <ul class="steps" id="lockSteps"></ul>
+      <div class="lockStats" id="lockStats"></div>
+      <div class="row" style="margin-top:20px">
+        <button class="ghost" id="lockExtend">Ficar mais 2 min em pausa</button>
+        <button class="acc" id="lockStop">Terminar a sessão aqui</button>
+      </div>
+      <div class="sub" style="margin-top:12px" id="lockFoot"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notas de honestidade</h2>
+    <div class="note">
+      <p><b>O que este painel é:</b> um caderno de campo com um treinador. Regista o que tu já fizeste
+      no site, calcula o teu P/L, o volume gasto, quanto falta para a meta, quanto tempo ainda tens,
+      e propõe a próxima ronda segundo <i>a tua própria</i> rotação. Não toca no site.</p>
+      <p><b>O que este painel não é, de propósito:</b> não coloca apostas, não faz login por ti, não
+      guarda a tua password, não fala com nenhuma API do casino e não lê o DOM do csgo500.com.
+      Os navegadores bloqueiam a leitura cross-origin, e automatizar apostas viola os termos do site —
+      arriscarias o bloqueio da conta e a anulação de ganhos. O registo é manual, um clique (ou uma tecla) por ronda.</p>
+      <p><b>Porque não existe um botão "apostar por mim":</b> além do risco de confisco do saldo na tua conta real,
+      ele não te daria nada. O valor esperado de uma aposta é <code>stake × edge</code>, seja dada por ti seja por
+      um script — automatizar não melhora um único número. O único efeito de acelerar é chegar ao fim do orçamento
+      mais depressa, e perder o intervalo entre rondas, que é exactamente onde tu pensas. Um botão que aposta por ti
+      é o oposto de "apostar com cabeça".</p>
+      <p><b>As pausas são a única coisa grátis neste sistema.</b> Cada aposta paga <code>stake × 1%</code>. Uma pausa paga
+      zero. O Freno de mão dispara sozinho em três situações — sequência de derrotas, ganho grande, e cadência de rondas —
+      porque são exactamente os três momentos em que se decide mal. O registo manual e as pausas forçadas não são
+      limitações técnicas: são o produto.</p>
+      <details style="margin-top:10px">
+        <summary>Porque é que o registo manual é uma vantagem, e não um defeito</summary>
+        <div class="note" style="margin-top:8px">
+          Um clique por ronda obriga-te a olhar para o número antes de avançar. É a diferença entre
+          apostar no automático e apostar com cabeça. Um bot faria mais rápido — e é exactamente a
+          velocidade que te come o orçamento: a 1,5 s por ronda perdes os $5 em 42 minutos de edge,
+          a 6 s duras 2h48.
+        </div>
+      </details>
+      <div class="flag ok" style="margin-top:14px">
+        <b>Matemática central:</b> o custo de uma ronda é <code>stake × edge</code>, e não depende do
+        multiplicador. Rodar multiplicadores e minas é <b>grátis</b>. Subir o stake é o que encurta a
+        sessão: de $0,30 para $0,80, a duração mediana cai 82%.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================== UTIL ============================== */
+const $ = id => document.getElementById(id);
+const MONEY = v => (v<0?"−":"") + "$" + Math.abs(v).toFixed(2);
+const PCT   = v => (v*100).toFixed(1) + "%";
+const mmss  = s => {
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s/60);
+  return m + ":" + String(s%60).padStart(2,"0");
+};
+
+/* combinações C(n,k) — usado pelo motor de Mines */
+const C = (() => {
+  const cache = {};
+  const f = n => {
+    if (n in cache) return cache[n];
+    let r = 1;
+    for (let i = 2; i <= n; i++) r *= i;
+    return cache[n] = r;
+  };
+  return (n,k) => {
+    if (k < 0 || k > n) return 0;
+    return Math.round(f(n) / (f(k) * f(n-k)));
+  };
+})();
+
+/* ======================= MOTOR DE ESTRATÉGIA ======================= */
+/* O edge é sempre aplicado ao stake, qualquer que seja o multiplicador.
+   Regra: stake FIXO. O que roda é o multiplicador / a config de minas.  */
+
+const DEFAULT_ROTATION = [
+  "dice 1.10",
+  "mines 1 3",
+  "dice 1.50",
+  "mines 3 2",
+  "dice 2.00",
+  "mines 5 2",
+  "dice 1.50",
+  "mines 3 4",
+  "dice 2.00",
+  "mines 1 5",
+  "dice 1.32",
+  "mines 5 1"
+].join("\n");
+
+function parseRotation(text, edge){
+  const out = [];
+  for (const raw of String(text).split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const p = line.split(/\s+/);
+    const kind = p[0].toLowerCase();
+    if (kind === "dice") {
+      const mult = parseFloat(p[1]);
+      if (!isFinite(mult) || mult <= 1) continue;
+      out.push({ game:"Dice", mult, detail:"multiplicador " + mult.toFixed(2) + "x",
+                 winChance:(1-edge)/mult, error:null });
+    } else if (kind === "mines") {
+      const m = parseInt(p[1],10), k = parseInt(p[2],10);
+      if (!(m>=1 && m<=24) || !(k>=1 && k<=25-m)) continue;
+      const pWin = C(25-m,k) / C(25,k);
+      out.push({ game:"Mines", mult:(1-edge)/pWin, mines:m, tiles:k,
+                 detail:m + " mina" + (m>1?"s":"") + " · " + k + " casa" + (k>1?"s":"") +
+                        " seguras · " + PCT(pWin) + " de acerto",
+                 winChance:pWin, error:null });
+    }
+  }
+  return out;
+}
+
+/* ============================== ESTADO ============================== */
+const LS = "sessao500.v1";
+let S = null;
+
+function blankState(cfg){
+  return {
+    cfg,
+    startedAt: Date.now(),
+    startBalance: cfg.start,
+    balance: cfg.start,
+    cursor: 0,          // índice da rotação da PRÓXIMA ronda
+    history: [],        // {i,game,stake,mult,result,balance,at}
+    /* --- Freno de mão (TiltGuard) --- */
+    lossStreak: 0,
+    winStreak: 0,
+    breaks: [],         // {kind, secs, afterRound, at}
+    lockKind: null,
+    lockUntil: 0,
+    lockStart: 0,
+    ended: false,
+    impulses: [],       // {at, balance, volume, lossStreak}
+    deviations: [],     // {at, kind, from, to}
+    warSeen: false
+  };
+}
+function defaultGuard(){
+  return { microEvery:25, microSecs:45, lossStreak:5, lossCool:180,
+           winCoolAmount:1.0, winCoolSecs:120, maxPace:20 };
+}
+function defaultCfg(){
+  return { start:5, stake:0.30, goal:0, edge:0.01, speed:3, timeLimit:45,
+           rotation:DEFAULT_ROTATION, guard:defaultGuard() };
+}
+
+/* --------------------------- derivados --------------------------- */
+function rot(){ return parseRotation(S.cfg.rotation, S.cfg.edge); }
+
+function volume(){ return S.history.reduce((a,h)=>a+h.stake,0); }
+function rounds(){ return S.history.length; }
+function pnl(){ return S.balance - S.startBalance; }
+
+/* orçamento de volume: a banca compra  banca/edge  de volume */
+function volBudget(){ return S.startBalance / S.cfg.edge; }
+function volPct(){ return Math.min(1, volume() / volBudget()); }
+
+/* com stake fixo, o volume restante = saldo/edge  ->  rondas restantes */
+function roundsLeft(){
+  if (S.balance <= 0) return 0;
+  return (S.balance / S.cfg.edge) / effectiveStake();
+}
+function effectiveStake(){
+  const r = rot();
+  if (!r.length) return S.cfg.stake;
+  return S.cfg.stake;   // stake é FIXO por decisão de disciplina
+}
+function secondsLeft(){ return roundsLeft() * S.cfg.speed; }
+function sessionSeconds(){ return (Date.now() - S.startedAt) / 1000; }
+
+/* ========================= MONTE CARLO (JS) ========================= */
+/* Simula a sessão até quebrar, atingir a meta, ou esgotar o limite de rondas. */
+function monteCarlo(trials){
+  const r = rot();
+  if (!r.length) return null;
+  const stake = S.cfg.stake;
+  const edge  = S.cfg.edge;
+  const goal  = S.cfg.goal > S.balance ? S.cfg.goal : 0;
+  const cap   = Math.min(60000, Math.max(200, Math.ceil(roundsLeft()*3)));
+
+  let hitGoal = 0, everGreen = 0, doubled = 0, sawPeak = 0;
+  const lens = [];
+
+  for (let t = 0; t < trials; t++){
+    let bal = S.balance, i = 0;
+    let peak = bal;
+    while (bal >= stake && i < cap){
+      const step = r[(S.cursor + i) % r.length];
+      const st = Math.min(stake, bal);
+      if (Math.random() < step.winChance) bal += st * (step.mult - 1);
+      else bal -= st;
+      if (bal < 0) bal = 0;
+      if (bal > peak) peak = bal;
+      i++;
+      if (goal && bal >= goal) break;
+    }
+    lens.push(i);
+    if (goal && bal >= goal) hitGoal++;
+    /* metricas de PICO: nao dependem do teto de rondas, por isso sao honestas */
+    if (peak > S.balance + 1e-9) everGreen++;
+    if (peak >= S.balance * 1.2) sawPeak++;
+    if (peak >= S.balance * 2)   doubled++;
+  }
+  lens.sort((a,b)=>a-b);
+  return {
+    trials, cap,
+    pGoal: goal ? hitGoal/trials : null,
+    pGreen: everGreen/trials,
+    pDouble: doubled/trials,
+    pPeak: sawPeak/trials,
+    medianRounds: lens[Math.floor(trials/2)]
+  };
+}
+
+/* ====================== FRENO DE MÃO (TiltGuard) ====================== */
+/* A pausa é a UNICA acção do sistema sem custo de edge.
+   Cada aposta paga stake*1%. Uma pausa custa zero.
+   É por isso que este é o módulo com melhor retorno de todo o painel. */
+
+function locked(){ return !!S.lockKind && Date.now() < S.lockUntil; }
+
+function pacePerMin(){
+  const now = Date.now(), win = 60000, cut = now - win;
+  const recent = S.history.filter(h => h.at >= cut).length;
+  const span = Math.min(win, now - S.startedAt);
+  if (span < 5000) return 0;
+  return recent / (span / 60000);
+}
+
+function lastBreakRound(){
+  return S.breaks.length ? S.breaks[S.breaks.length-1].afterRound : 0;
+}
+function roundsSinceBreak(){ return rounds() - lastBreakRound(); }
+function totalPausedSecs(){ return S.breaks.reduce((a,b)=>a+b.secs,0); }
+
+function openLock(kind, secs, why, foot){
+  const now = Date.now();
+  S.lockKind = kind; S.lockUntil = now + secs*1000; S.lockStart = now;
+  S.lockWhy = why || ""; S.lockFoot = foot || "";
+  save(); render();
+}
+function releaseLock(){
+  if (!S.lockKind) return;
+  const secs = (Date.now() - S.lockStart) / 1000;
+  S.breaks.push({ kind:S.lockKind, secs, afterRound:rounds(), at:Date.now() });
+  if (S.lockKind === "streak") S.lossStreak = 0;
+  S.lockKind = null; S.lockUntil = 0; S.lockWhy = ""; S.lockFoot = "";
+  save(); render();
+}
+
+/* Avalia os gatilhos DEPOIS de cada ronda registada. */
+function checkTriggers(lastGain){
+  const g = S.cfg.guard;
+  if (locked() || S.ended) return null;
+  if (S.lossStreak >= g.lossStreak)
+    return openLock("streak", g.lossCool,
+      S.lossStreak + " derrotas seguidas. Isto é exactamente o momento em que se aposta na emoção.");
+  if (lastGain >= g.winCoolAmount)
+    return openLock("win", g.winCoolSecs,
+      "Ganhaste " + MONEY(lastGain) + " numa só ronda. É aqui que se devolve tudo — a euforia aposta maior.");
+  if (roundsSinceBreak() >= g.microEvery)
+    return openLock("micro", g.microSecs,
+      roundsSinceBreak() + " rondas seguidas sem parar. Os olhos e o julgamento já estão cansados.");
+  return null;
+}
+
+const LOCK_TEXT = {
+  micro: { t:"micro-pausa", steps:[
+    "Levanta-te e sai da cadeira.",
+    "Bebe um copo de água inteiro.",
+    "Olha para algo a mais de 6 metros durante 20 segundos.",
+    "Não abras o chat nem o site do casino nesta pausa." ]},
+  streak: { t:"cooldown por sequência de derrotas", steps:[
+    "Fecha o separador do casino. A sério.",
+    "Escreve aqui uma frase sobre o que estás a sentir agora.",
+    "Relê o volume consumido abaixo. É esse o teu custo real, não a sequência.",
+    "Faz uma pausa completa de 3 minutos antes de decidir continuar." ]},
+  win: { t:"cooldown por ganho grande", steps:[
+    "Saca metade do que ganhaste. Agora, não depois.",
+    "A próxima aposta continua a ser o mesmo stake fixo. Sem excepções.",
+    "Um ganho grande não muda a matemática — muda só a tua vontade de subir o stake.",
+    "Ouve o teu próprio plano antes de voltar." ]},
+  manual: { t:"pausa voluntária", steps:[
+    "Boa. Pediste uma pausa sem ninguém te obrigar.",
+    "Respira fundo três vezes, devagar.",
+    "Verifica se ainda estás dentro do orçamento e do tempo.",
+    "Decide conscientemente se continuas ou se fechas aqui." ]},
+  escudo: { t:"ronda do plano confirmada", steps:[
+    "Vai ao site e usa EXACTAMENTE o stake e o multiplicador do motivo abaixo.",
+    "Não aumentes o stake. Não mudes de jogo. Não improvises.",
+    "Volta aqui e regista o resultado com uma tecla.",
+    "Se sentires vontade de desviar, carrega em «impulso» primeiro." ]},
+  impulso: { t:"impulso registado, não seguido", steps:[
+    "Boa. Registaste em vez de cederes. É o movimento mais difícil deste painel.",
+    "Não vás ao site durante estes 2 minutos. Só isso.",
+    "Relê o custo do rodapé: é tempo de sessão que acabaste de proteger.",
+    "Um impulso é sinal de cansaço ou de sequência, nunca de oportunidade." ]}
+};
+
+function renderLock(){
+  const el = $("lock");
+  if (!locked()){ el.classList.remove("on"); return; }
+  el.classList.add("on");
+  const info = LOCK_TEXT[S.lockKind] || LOCK_TEXT.manual;
+  $("lockTitle").textContent = info.t;
+  $("lockWhy").textContent = S.lockWhy || "";
+  $("lockTimer").textContent = mmss((S.lockUntil - Date.now())/1000);
+  $("lockSteps").innerHTML = info.steps.map(s => "<li>" + s + "</li>").join("");
+  $("lockStats").innerHTML = [
+    ["saldo actual", MONEY(S.balance)],
+    ["P/L", (pnl()>=0?"+":"") + MONEY(pnl())],
+    ["volume gasto", MONEY(volume()) + " / " + MONEY(volBudget())],
+    ["edge já pago", MONEY(volume()*S.cfg.edge)],
+    ["rondas", String(rounds())],
+    ["pausas cumpridas", String(S.breaks.length)]
+  ].map(([k,v]) => "<div><span>" + k + "</span><b>" + v + "</b></div>").join("");
+  $("lockFoot").innerHTML = S.lockFoot ||
+    "Esta pausa custou-te $0.00 de edge. Foi a única coisa gratuita da sessão.";
+}
+
+/* ==================== DISCIPLINA ACTIVA (Gate / Impulso / Guerra) ==================== */
+/* Principio: o painel nao executa nada e nao proibe nada. Ele mede, cobra espera,
+   e obriga a ler. Aplicar o custo medido a uma decisao emocional e o unico travão
+   honesto possivel de um lado que nao controla o outro. */
+
+const GATE_CHECKS = [
+  "Li o custo medido e aceito a redução de tempo de sessão.",
+  "A alteração é deliberada, não é reacção a uma sequência de perdas.",
+  "Vou manter o limite de volume e o limite de tempo, mesmo com o stake novo."
+];
+
+/* Mediana de rondas com um dado stake, a partir do estado actual. */
+function medianSession(stake, trials){
+  const r = rot();
+  if (!r.length || S.balance < stake) return 0;
+  const cap = 40000;
+  const med = new Array(trials);
+  for (let t = 0; t < trials; t++){
+    let bal = S.balance, i = 0;
+    while (bal >= stake && i < cap){
+      const step = r[i % r.length];
+      const st = Math.min(stake, bal);
+      if (Math.random() < step.winChance) bal += st * (step.mult - 1);
+      else bal -= st;
+      if (bal < 0) bal = 0;
+      i++;
+    }
+    med[t] = i;
+  }
+  med.sort((a,b) => a-b);
+  return med[Math.floor(trials/2)];
+}
+
+let gateTimer = null;
+
+function openGate(){
+  $("gatePlanStake").value = S.cfg.stake;
+  $("gateStake").value = S.cfg.stake;
+  $("gateChecks").innerHTML = GATE_CHECKS.map((c,i) =>
+    '<label class="check"><input type="checkbox" id="gc'+i+'"><span>'+c+'</span></label>').join("");
+  $("gateApply").disabled = true;
+  let left = 60;
+  $("gateApply").textContent = "Aplicar (0:60)";
+  clearInterval(gateTimer);
+  gateTimer = setInterval(() => {
+    left--;
+    $("gateApply").textContent = left > 0 ? "Aplicar (0:"+String(left).padStart(2,"0")+")" : "Aplicar alteração";
+    if (left <= 0){ clearInterval(gateTimer); gateReadyCheck(); }
+  }, 1000);
+  $("gate").classList.add("on");
+  gateCost();
+}
+function gateReadyCheck(){
+  const all = GATE_CHECKS.every((_,i) => $("gc"+i).checked);
+  const timeUp = $("gateApply").textContent === "Aplicar alteração";
+  $("gateApply").disabled = !(all && timeUp);
+}
+function closeGate(){
+  clearInterval(gateTimer);
+  $("gate").classList.remove("on");
+}
+function gateCost(){
+  const want = Math.max(0.01, parseFloat($("gateStake").value) || S.cfg.stake);
+  const plan = S.cfg.stake;
+  const mPlan = medianSession(plan, 1500);
+  const mWant = medianSession(want, 1500);
+  const ratio = mPlan > 0 ? mWant / mPlan : 1;
+  const pct = (ratio - 1) * 100;
+  const color = pct < -25 ? "var(--bad)" : pct < -5 ? "var(--warn)" : "var(--ok)";
+  $("gateCost").innerHTML = [
+    ["mediana com o plano  (" + MONEY(plan) + ")", Math.round(mPlan) + " rondas"],
+    ["mediana com o pedido  (" + MONEY(want) + ")", Math.round(mWant) + " rondas"],
+    ["efeito no tempo de sessão", "<span class='delta' style='color:"+color+"'>" +
+        (pct>=0?"+":"") + pct.toFixed(0) + "%</span>"],
+    ["custo de edge por ronda", "$" + (want*S.cfg.edge).toFixed(4) + "  (era $" + (plan*S.cfg.edge).toFixed(4) + ")"]
+  ].map(([k,v]) => "<div><span>"+k+"</span><b>"+v+"</b></div>").join("");
+}
+
+function logImpulse(){
+  S.impulses.push({ at:Date.now(), balance:S.balance, volume:volume(),
+                    lossStreak:S.lossStreak, rounds:rounds() });
+  const plan = S.cfg.stake;
+  const mPlan = Math.round(medianSession(plan, 800));
+  const mMax  = Math.round(medianSession(0.80, 800));
+  const foot = "Se tivesses cedido e subido o stake de " + MONEY(plan) + " para $0.80, a tua sessão" +
+    " mediana passaria de <b>" + mPlan + "</b> para <b>" + mMax + "</b> rondas." +
+    " Ficaste com as " + mPlan + ". Registaste o impulso após " + S.lossStreak +
+    " derrotas seguidas — o gatilho clássico.";
+  openLock("impulso", 120, "Registaste o impulso em vez de o seguires.", foot);
+}
+
+function warCondition(){
+  const overVol = volume() >= volBudget();
+  const overTime = sessionSeconds() > S.cfg.timeLimit * 60;
+  const broke = S.balance < S.cfg.stake;
+  if (!overVol && !overTime && !broke) return null;
+  return overVol ? "Esgotaste o orçamento de volume: " + MONEY(volume()) + " apostados, que é o que os teus " +
+                    MONEY(S.startBalance) + " compravam."
+       : broke    ? "O saldo caiu abaixo do stake mínimo. A sessão acabou do modo que estava previsto."
+                  : "Ultrapassaste o limite de tempo que tu próprio definiste.";
+}
+
+function renderDiscipline(){
+  $("diImpulses").textContent = S.impulses.length;
+  $("diDeviations").textContent = S.deviations.length;
+  $("diNote").textContent = S.impulses.length === 0
+    ? "Carregar em «impulso» nunca te custa nada. Escondê-lo custa."
+    : "Levavas " + S.impulses.length + " impulso" + (S.impulses.length>1?"s":"") +
+      " registado" + (S.impulses.length>1?"s":"") + ". Zero deles virou aposta.";
+  const why = warCondition();
+  const war = $("war");
+  if (why && !S.warSeen){
+    war.classList.add("on");
+    $("warWhy").textContent = why;
+    $("warStats").innerHTML = [
+      ["saldo final", MONEY(S.balance)],
+      ["P/L", (pnl()>=0?"+":"") + MONEY(pnl())],
+      ["volume apostado", MONEY(volume())],
+      ["edge pago ao casino", MONEY(volume()*S.cfg.edge)],
+      ["rondas", String(rounds())],
+      ["pausas cumpridas", String(S.breaks.length)],
+      ["impulsos registados", String(S.impulses.length)],
+      ["tempo de sessão", mmss(sessionSeconds())]
+    ].map(([k,v]) => "<div><span>"+k+"</span><b>"+v+"</b></div>").join("");
+  } else {
+    /* fechar sempre que nao esteja activo-por-confirmar. O gatilho do volume nao
+       desaparece (o volume ja foi gasto), por isso nao pode ser um else-if. */
+    war.classList.remove("on");
+  }
+}
+
+/* ============================== RENDER ============================== */
+function render(){
+  const r = rot();
+  const p = pnl();
+
+  $("startBal").textContent = MONEY(S.startBalance);
+  $("bal").textContent = MONEY(S.balance);
+  $("bal").style.color = p > 0.0001 ? "var(--ok)" : p < -0.0001 ? "var(--bad)" : "var(--txt)";
+
+  $("pnl").textContent = (p>=0?"+":"") + MONEY(p);
+  $("pnl").style.color = p > 0.0001 ? "var(--ok)" : p < -0.0001 ? "var(--bad)" : "var(--txt)";
+  $("pnlPct").textContent = (p>=0?"+":"") + (p / S.startBalance * 100).toFixed(1) + "% da banca inicial";
+
+  if (S.cfg.goal > 0){
+    const falta = S.cfg.goal - S.balance;
+    if (falta <= 0){
+      $("goalTxt").textContent = "ATINGIDA ✓";
+      $("goalTxt").style.color = "var(--ok)";
+      $("goalSub").textContent = "saca o dinheiro. agora.";
+    } else {
+      $("goalTxt").textContent = MONEY(falta);
+      $("goalTxt").style.color = "var(--txt)";
+      $("goalSub").textContent = "faltam para os " + MONEY(S.cfg.goal) + " (precisas de ×" +
+        (S.cfg.goal/S.balance).toFixed(2) + " no saldo actual)";
+    }
+  } else {
+    $("goalTxt").textContent = "livre";
+    $("goalTxt").style.color = "var(--mut)";
+    $("goalSub").textContent = "sem objectivo definido — só diversão";
+  }
+
+  $("volTxt").textContent = MONEY(volume()) + " / " + MONEY(volBudget());
+  $("volSub").textContent = PCT(volPct()) + " do orçamento · o casino já levou " +
+    MONEY(volume()*S.cfg.edge) + " de edge";
+  const vb = $("volBar");
+  vb.className = "bar" + (volPct()>.85 ? " b" : volPct()>.6 ? " w" : "");
+  vb.firstElementChild.style.width = PCT(volPct());
+
+  /* próxima ronda */
+  if (!r.length){
+    $("nextGame").textContent = "rotação vazia";
+    $("nextStake").textContent = "—";
+    $("nextDetail").textContent = "corrige a configuração";
+  } else if (S.balance < S.cfg.stake){
+    $("nextGame").textContent = "sessão terminada";
+    $("nextStake").textContent = MONEY(S.balance);
+    $("nextDetail").textContent = "saldo abaixo do stake mínimo de " + MONEY(S.cfg.stake) +
+      ". Fecha o separador — é isto que tinhas decidido.";
+  } else {
+    const step = r[S.cursor % r.length];
+    $("nextGame").textContent = step.game + " · ronda #" + (rounds()+1) + " de " + r.length + " na rotação";
+    $("nextStake").textContent = MONEY(S.cfg.stake);
+    $("nextDetail").textContent = step.detail + " · ganho potencial " +
+      MONEY(S.cfg.stake*(step.mult-1));
+  }
+
+  /* guardrails */
+  const secs = sessionSeconds();
+  const limit = S.cfg.timeLimit * 60;
+  $("gTime").textContent = mmss(secs) + " / " + mmss(limit);
+  const tb = $("timeBar");
+  tb.className = "bar" + (secs/limit>.85 ? " b" : secs/limit>.6 ? " w" : "");
+  tb.firstElementChild.style.width = PCT(Math.min(1, secs/limit));
+  $("gRounds").textContent = rounds();
+  $("gVol").textContent = MONEY(volume());
+  $("gLeft").textContent = "≈ " + Math.round(roundsLeft());
+  $("gTLeft").textContent = "≈ " + mmss(secondsLeft());
+  $("gLock").textContent = MONEY(S.cfg.stake) + " fixo";
+
+  /* alertas */
+  const al = [];
+  if (S.balance < S.cfg.stake)
+    al.push(['bad','Saldo abaixo do stake mínimo. A sessão acabou — por desenho, não por azar.']);
+  if (volPct() >= 1)
+    al.push(['bad','Orçamento de volume esgotado (' + MONEY(volBudget()) + ' apostados). Regra: parar.']);
+  else if (volPct() > .85)
+    al.push(['','Estás a ' + PCT(1-volPct()) + ' do fim do orçamento de volume.']);
+  if (secs > limit)
+    al.push(['bad','Limite de tempo ultrapassado (' + mmss(limit) + '). Alarme era para ser respeitado.']);
+  else if (secs > limit*.8)
+    al.push(['','Faltam ' + mmss(limit-secs) + ' para o teu limite de tempo.']);
+  if (S.cfg.goal > 0 && S.balance >= S.cfg.goal)
+    al.push(['ok','Meta atingida. Saca já — a decisão de sacar não se renegocia.']);
+  if (rounds() >= 1 && pnl() > S.startBalance*0.5)
+    al.push(['ok','Estás a +' + PCT(pnl()/S.startBalance) + '. Saca metade: é óptimo psicologicamente.']);
+  if (!al.length)
+    al.push(['ok','Tudo dentro dos limites. A única variável que podes mexer é o multiplicador — e é grátis.']);
+  $("alerts").innerHTML = al.map(([k,t]) =>
+    '<div class="flag ' + k + '">' + t + '</div>').join("");
+
+  /* estado no topo */
+  const pill = $("statusPill");
+  const over = volPct() >= 1 || secs > limit || S.balance < S.cfg.stake;
+  pill.className = "pill " + (over ? "over" : "live");
+  pill.textContent = over ? "SESSÃO ENCERRADA" : "SESSÃO ACTIVA";
+
+  /* log */
+  const body = $("logBody");
+  body.innerHTML = S.history.slice().reverse().slice(0,120).map(h => {
+    const cls = h.result === "win" ? "win-t" : h.result === "lose" ? "lose-t" : "push-t";
+    const lbl = h.result === "win" ? "GANHOU +" + (h.stake*(h.mult-1)).toFixed(2)
+              : h.result === "lose" ? "PERDEU −" + h.stake.toFixed(2) : "push";
+    return "<tr><td>" + h.i + "</td><td>" + h.game + "</td><td>" + MONEY(h.stake) +
+           "</td><td>" + h.mult.toFixed(2) + "x</td><td class='" + cls + "'>" + lbl +
+           "</td><td>" + MONEY(h.balance) + "</td></tr>";
+  }).join("") || "<tr><td colspan='6' style='color:var(--mut)'>sem rondas registadas</td></tr>";
+
+  $("rotInfo").textContent = r.length + " rondas na rotação · stake fixo de " + MONEY(S.cfg.stake);
+  renderBrake();
+  renderLock();
+  renderDiscipline();
+
+  $("rotWarn").innerHTML = r.length
+    ? "Multiplicadores na rotação variam de " + Math.min(...r.map(x=>x.mult)).toFixed(2) +
+      "x a " + Math.max(...r.map(x=>x.mult)).toFixed(2) +
+      "x. <b>Isto não muda o custo esperado por ronda</b> — só o tamanho das oscilações."
+    : "Nenhuma ronda válida. Escreve linhas como <code>dice 2.0</code> ou <code>mines 3 2</code>.";
+
+  drawChart();
+}
+
+/* ============================== GRÁFICO ============================== */
+function drawChart(){
+  const cv = $("chart");
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = 230;
+  cv.width = w*dpr; cv.height = h*dpr;
+  const g = cv.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+
+  const pad = {l:52, r:12, t:12, b:24};
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+
+  const pts = [{bal:S.startBalance, vol:0, label:"início"}];
+  let v = 0, peak = S.startBalance, low = S.startBalance;
+  for (const hh of S.history){
+    v += hh.stake;
+    pts.push({bal:hh.balance, vol:v, label:"#"+hh.i});
+    peak = Math.max(peak, hh.balance); low = Math.min(low, hh.balance);
+  }
+  const maxVol = Math.max(volBudget(), v, 1);
+  const maxBal = Math.max(peak, S.startBalance) * 1.06;
+  const minBal = 0;
+  const X = vol => pad.l + (vol/maxVol)*iw;
+  const Y = bal => pad.t + ih - ((bal-minBal)/(maxBal-minBal))*ih;
+
+  /* grelha */
+  g.strokeStyle = "#2e2a3f"; g.lineWidth = 1;
+  g.fillStyle = "#8b8798"; g.font = "11px ui-monospace,monospace";
+  for (let i = 0; i <= 4; i++){
+    const bal = minBal + (maxBal-minBal)*i/4, y = Y(bal);
+    g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w-pad.r, y); g.stroke();
+    g.textAlign = "right"; g.fillText("$"+bal.toFixed(2), pad.l-8, y+4);
+  }
+  g.textAlign = "center";
+  for (let i = 0; i <= 4; i++){
+    const vol = maxVol*i/4, x = X(vol);
+    g.fillText("$"+Math.round(vol), x, h-6);
+  }
+
+  /* linha esperada E = start - edge*vol */
+  g.strokeStyle = "#5aa9ff"; g.setLineDash([5,4]); g.lineWidth = 1.5;
+  g.beginPath();
+  g.moveTo(X(0), Y(S.startBalance));
+  g.lineTo(X(maxVol), Y(Math.max(0, S.startBalance - S.cfg.edge*maxVol)));
+  g.stroke(); g.setLineDash([]);
+
+  /* linha real */
+  if (pts.length > 1){
+    g.strokeStyle = "#ff5773"; g.lineWidth = 2.2; g.lineJoin = "round";
+    g.beginPath();
+    pts.forEach((p,i) => i ? g.lineTo(X(p.vol), Y(p.bal)) : g.moveTo(X(p.vol), Y(p.bal)));
+    g.stroke();
+    const last = pts[pts.length-1];
+    g.fillStyle = "#ff5773";
+    g.beginPath(); g.arc(X(last.vol), Y(last.bal), 3.5, 0, Math.PI*2); g.fill();
+  } else {
+    g.fillStyle = "#ff5773";
+    g.beginPath(); g.arc(X(0), Y(S.startBalance), 3.5, 0, Math.PI*2); g.fill();
+  }
+
+  /* legenda */
+  g.font = "11px ui-monospace,monospace"; g.textAlign = "left";
+  g.fillStyle = "#ff5773"; g.fillRect(pad.l, pad.t+2, 14, 3);
+  g.fillStyle = "#8b8798"; g.fillText("saldo real", pad.l+20, pad.t+7);
+  g.fillStyle = "#5aa9ff"; g.fillRect(pad.l+92, pad.t+2, 14, 3);
+  g.fillStyle = "#8b8798"; g.fillText("deriva do edge", pad.l+112, pad.t+7);
+}
+
+/* ============================== ACÇÕES ============================== */
+function record(result){
+  if (locked() || S.ended) return;
+  const r = rot();
+  if (!r.length || S.balance < S.cfg.stake) return;
+  const step = r[S.cursor % r.length];
+  const stake = Math.min(S.cfg.stake, S.balance);
+  if (result === "win")       S.balance += stake * (step.mult - 1);
+  else if (result === "lose") S.balance = Math.max(0, S.balance - stake);
+  let gain = 0;
+  if (result === "win"){ gain = stake*(step.mult-1); S.lossStreak = 0; S.winStreak++; }
+  else if (result === "lose"){ S.lossStreak++; S.winStreak = 0; }
+  S.history.push({
+    i: S.history.length + 1, game: step.game, stake, mult: step.mult,
+    result, balance: S.balance, at: Date.now()
+  });
+  S.cursor++;
+  save();
+  if (!checkTriggers(gain)) render();
+}
+function renderBrake(){
+  const g = S.cfg.guard, p = pacePerMin(), over = p > g.maxPace;
+  $("brakeState").textContent = locked() ? "EM PAUSA" : (S.ended ? "encerrada" : (over ? "abranda" : "pronto"));
+  $("brakeState").style.color = locked() ? "var(--warn)" : (S.ended ? "var(--bad)" : (over ? "var(--warn)" : "var(--ok)"));
+  $("brakeReason").textContent = locked()
+    ? S.lockWhy
+    : (over
+      ? "Estás a " + p.toFixed(0) + " rondas/min (limite " + g.maxPace + "). Abrandar não custa edge."
+      : "as pausas custam zero edge. são a única coisa grátis aqui.");
+  $("brPace").textContent = p.toFixed(1) + " rondas/min";
+  const pb = $("paceBar");
+  pb.className = "pace" + (p > g.maxPace ? " b" : p > g.maxPace*.7 ? " w" : "");
+  pb.firstElementChild.style.width = PCT(Math.min(1, p / Math.max(1, g.maxPace)));
+  $("brStreak").textContent = S.lossStreak + " / " + g.lossStreak;
+  $("brStreak").style.color = S.lossStreak >= g.lossStreak-1 ? "var(--bad)" : "var(--txt)";
+  $("brSince").textContent = roundsSinceBreak() + " / " + g.microEvery;
+  $("brCount").textContent = S.breaks.length;
+  $("brTime").textContent = mmss(totalPausedSecs());
+}
+
+function undo(){
+  const h = S.history.pop();
+  if (!h) return;
+  S.balance -= (h.result === "win" ? h.stake*(h.mult-1)
+              : h.result === "lose" ? -h.stake : 0);
+  S.balance = Math.max(0, S.balance);
+  S.cursor = Math.max(0, S.cursor - 1);
+  save(); render();
+}
+
+/* ============================== PERSISTÊNCIA ============================== */
+function save(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
+function load(){
+  try {
+    const raw = localStorage.getItem(LS);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !s.cfg || !Array.isArray(s.history)) return null;
+    /* migracao de estados antigos */
+    s.cfg.guard = Object.assign(defaultGuard(), s.cfg.guard || {});
+    if (!Array.isArray(s.breaks)) s.breaks = [];
+    if (typeof s.lossStreak !== "number") s.lossStreak = 0;
+    if (typeof s.winStreak !== "number") s.winStreak = 0;
+    if (typeof s.lockUntil !== "number") s.lockUntil = 0;
+    if (typeof s.ended !== "boolean") s.ended = false;
+    if (!Array.isArray(s.impulses)) s.impulses = [];
+    if (!Array.isArray(s.deviations)) s.deviations = [];
+    if (typeof s.warSeen !== "boolean") s.warSeen = false;
+    return s;
+  } catch(e){ return null; }
+}
+
+/* ============================== EXPORT ============================== */
+function download(name, text, type){
+  const b = new Blob([text], {type});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement("a");
+  a.href = u; a.download = name; a.click();
+  URL.revokeObjectURL(u);
+}
+function exportJson(){
+  download("sessao500.json", JSON.stringify(S, null, 2), "application/json");
+}
+function exportCsv(){
+  const head = "ronda,jogo,stake,multiplicador,resultado,saldo,volume_acumulado\n";
+  let v = 0;
+  const rows = S.history.map(h => {
+    v += h.stake;
+    return [h.i, h.game, h.stake.toFixed(2), h.mult.toFixed(4), h.result,
+            h.balance.toFixed(2), v.toFixed(2)].join(",");
+  }).join("\n");
+  download("sessao500.csv", head + rows, "text/csv");
+}
+
+/* ============================== CONFIG UI ============================== */
+function fillConfig(){
+  $("cfgStart").value = S.cfg.start;
+  $("cfgStake").value = S.cfg.stake;
+  $("cfgGoal").value  = S.cfg.goal;
+  $("cfgEdge").value  = (S.cfg.edge*100).toFixed(2);
+  $("cfgSpeed").value = S.cfg.speed;
+  $("cfgTime").value  = S.cfg.timeLimit;
+  $("cfgRotation").value = S.cfg.rotation;
+  const g = S.cfg.guard;
+  $("cfgMicroEvery").value   = g.microEvery;
+  $("cfgMicroSecs").value    = g.microSecs;
+  $("cfgLossStreak").value   = g.lossStreak;
+  $("cfgLossCool").value     = g.lossCool;
+  $("cfgWinCool").value      = g.winCoolAmount;
+  $("cfgMaxPace").value      = g.maxPace;
+}
+function readGuardInputs(){
+  const n = (id, d, lo, hi) => {
+    const v = parseFloat($(id).value);
+    return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
+  };
+  return {
+    microEvery:    n("cfgMicroEvery", 25, 5, 1000),
+    microSecs:     n("cfgMicroSecs", 45, 10, 1800),
+    lossStreak:    n("cfgLossStreak", 5, 2, 50),
+    lossCool:      n("cfgLossCool", 180, 30, 3600),
+    winCoolAmount: n("cfgWinCool", 1, 0.1, 1000),
+    maxPace:       n("cfgMaxPace", 20, 3, 600),
+    winCoolSecs:   S.cfg.guard ? S.cfg.guard.winCoolSecs : 120
+  };
+}
+function applyConfig(){
+  const edge = Math.max(0.0001, (parseFloat($("cfgEdge").value)||1)/100);
+  const cfg = {
+    start: Math.max(0.01, parseFloat($("cfgStart").value)||5),
+    stake: Math.max(0.01, parseFloat($("cfgStake").value)||0.30),
+    goal:  Math.max(0, parseFloat($("cfgGoal").value)||0),
+    edge,
+    speed: Math.max(0.5, parseFloat($("cfgSpeed").value)||3),
+    timeLimit: Math.max(1, parseFloat($("cfgTime").value)||45),
+    rotation: $("cfgRotation").value,
+    guard: readGuardInputs()
+  };
+  S.cfg = cfg;
+  save(); render();
+}
+function newSession(){
+  const cfg = S ? S.cfg : defaultCfg();
+  S = blankState(cfg);
+  fillConfig(); save(); render(); runMC();
+}
+
+/* ============================== MONTE CARLO UI ============================== */
+let mcCache = null;
+function runMC(){
+  const t0 = performance.now();
+  const res = monteCarlo(10000);
+  const ms = performance.now() - t0;
+  if (!res){
+    $("mcGoal").textContent = "—";
+    $("mcGreen").textContent = "—";
+    $("mcMed").textContent = "—";
+    $("mcPeak").textContent = "—";
+    return;
+  }
+  mcCache = res;
+  $("mcGoal").textContent   = res.pGoal != null ? PCT(res.pGoal)
+    : (S.cfg.goal > 0 ? "já atingida" : "sem meta definida");
+  $("mcGreen").textContent  = PCT(res.pGreen);
+  $("mcDouble").textContent = PCT(res.pDouble);
+  $("mcPeak").textContent   = PCT(res.pPeak);
+  $("mcMed").textContent    = Math.round(res.medianRounds) + " rondas";
+  $("mcNote").textContent   = "10.000 simulações a partir deste estado (" + ms.toFixed(0) +
+    " ms, teto de " + res.cap + " rondas). As probabilidades de pico são medidas limpas — não" +
+    " dependem do teto. Próxima na rotação: " + (S.cursor % Math.max(1,rot().length)) + "ª.";
+}
+
+/* ============================== BOOT ============================== */
+S = load() || blankState(defaultCfg());
+fillConfig();
+render();
+runMC();
+
+$("btnWin").onclick  = () => { record("win");  runMC(); };
+$("btnLose").onclick = () => { record("lose"); runMC(); };
+$("btnPush").onclick = () => { record("push"); runMC(); };
+$("btnSkip").onclick = () => { S.cursor++; save(); render(); runMC(); };
+$("btnUndo").onclick = () => { undo(); render(); runMC(); };
+$("btnMC").onclick   = runMC;
+$("btnExportJson").onclick = exportJson;
+$("btnExportCsv").onclick  = exportCsv;
+$("btnReset").onclick = () => {
+  if (confirm("Começar uma sessão nova? O registo actual fica perdido (exporta primeiro)."))
+    newSession();
+};
+$("btnApply").onclick = applyConfig;
+$("btnResetCfg").onclick = () => {
+  S.cfg.rotation = DEFAULT_ROTATION;
+  S.cfg.guard = defaultGuard();
+  $("cfgRotation").value = DEFAULT_ROTATION;
+  fillConfig(); save(); render(); runMC();
+};
+$("cfgRotation").oninput = () => { S.cfg.rotation = $("cfgRotation").value; save(); render(); };
+
+/* ---- pausa voluntária ---- */
+$("btnPauseNow").onclick = () => {
+  if (!locked()) openLock("manual", 120, "Pausa pedida por ti. É a melhor decisão disponível neste ecrã.");
+};
+$("lockExtend").onclick = () => {
+  if (locked()) S.lockUntil = Math.max(S.lockUntil, Date.now()) + 120000;
+  save(); render();
+};
+$("btnShield").onclick = () => {
+  const step = rot()[S.cursor % Math.max(1, rot().length)];
+  openLock("escudo", 20, "Ronda " + (rounds()+1) + " do plano.",
+    "Stake <b>" + MONEY(S.cfg.stake) + "</b> em <b>" +
+    (step ? step.game + " · " + step.detail : "—") + "</b>. Executa tu, no site, exactamente isto.");
+};
+$("btnImpulse").onclick = logImpulse;
+$("gateStake").oninput = gateCost;
+/* delegacao: as checkboxes so existem depois de openGate() */
+$("gateChecks").addEventListener("change", gateReadyCheck);
+$("btnGate").onclick = openGate;
+$("gateCancel").onclick = closeGate;
+$("gateApply").onclick = () => {
+  const want = Math.max(0.01, parseFloat($("gateStake").value) || S.cfg.stake);
+  S.deviations.push({ at:Date.now(), kind:"stake", from:S.cfg.stake, to:want });
+  S.cfg.stake = want;
+  $("cfgStake").value = want;
+  closeGate(); save(); render(); runMC();
+};
+$("warAck").onclick = () => { S.warSeen = true; save(); render(); };
+$("warNew").onclick = () => {
+  const closed = { volume: volume(), balance: S.balance, rounds: rounds() };
+  if (!confirm("Abrir uma sessão nova? Isto fica registado como desvio deliberado ao plano.")) return;
+  const keep = S.cfg;
+  S = blankState(keep);
+  S.deviations.push({ at:Date.now(), kind:"nova-sessao", de:closed, to:0 });
+  save(); fillConfig(); render(); runMC();
+};
+
+$("lockStop").onclick = () => {
+  if (locked()){
+    const elapsed = (Date.now() - S.lockStart)/1000;
+    S.breaks.push({ kind:S.lockKind, secs:elapsed, afterRound:rounds(), at:Date.now() });
+  }
+  S.lockKind = null; S.lockUntil = 0; S.lockWhy = ""; S.ended = true;
+  save(); render();
+};
+
+/* ---- atalhos de teclado: um toque, sem rato ---- */
+window.addEventListener("keydown", e => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  if (e.key === "1") { record("win");  runMC(); }
+  else if (e.key === "2") { record("lose"); runMC(); }
+  else if (e.key === "3") { record("push"); runMC(); }
+  else if (e.key === "z") { undo(); runMC(); }
+  else if (e.key === " ") {
+    e.preventDefault();
+    if (!locked()) openLock("manual", 120, "Pausa pedida por ti. É a melhor decisão disponível neste ecrã.");
+  }
+});
+
+window.addEventListener("resize", drawChart);
+
+/* tick: liberta a pausa quando o tempo acaba e mantém o relógio vivo.
+   Nao usar deteccao de transicao: se a pausa expirar sem o tick a ter observado
+   (ex.: separador em segundo plano, ou expiracao forcada), a pausa perder-se-ia
+   e o contador de derrotas nunca reiniciava. Condicao de estado, nao de evento. */
+setInterval(() => {
+  if (S.lockKind && Date.now() >= S.lockUntil) releaseLock();
+  render();
+}, 500);
+
+/* NOTA: nao adicionar beforeunload->save. save() ja corre em cada mutacao, e
+   um save no unload ressurrecta o estado depois de um reset/limpeza. */
+</script>
+</body>
+</html>
