@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 .venv/
 venv/
 node_modules/
@@ -8,3 +8,15 @@ events.db
 debug.txt
 shots/
 baus_cache.json
+*.env
+baus.json
+baus_historico.json
+*.es3
+.freebuff/
+.DS_Store
+Thumbs.db
+app.log
+app.err.log
+ngrok_domain.txt
+*.pyc
+capturas/
